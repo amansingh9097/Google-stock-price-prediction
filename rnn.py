@@ -1,13 +1,12 @@
-# Recurrent Neural Network
+# Recurrent Neural Network to predict upward/downward trends in Stock Prices
 
-
-
-# Part 1 - Data Preprocessing
+# Data Preprocessing
 
 # Importing the libraries
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from keras.models import model_from_json
 
 # Importing the training set
 dataset_train = pd.read_csv('dataset/Google_Stock_Price_Train.csv')
@@ -31,7 +30,7 @@ X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
 
 
 
-# Part 2 - Building the RNN
+# Building the RNN
 
 # Importing the Keras libraries and packages
 from keras.models import Sequential
@@ -67,9 +66,27 @@ regressor.compile(optimizer = 'adam', loss = 'mean_squared_error')
 # Fitting the RNN to the Training set
 regressor.fit(X_train, y_train, epochs = 100, batch_size = 32)
 
+# Saving trained model to disk
 
+# serialize model to JSON
+model_json = regressor.to_json()
+with open("model/model.json", "w") as json_file:
+	json_file.write(model_json)
+# serialize weights to HDF5
+regressor.save_weights("model/model.h5")
+print("Saved model to disk")
 
-# Part 3 - Making the predictions and visualising the results
+# Loading trained model from disk
+
+# load json and create model
+json_file = open("model/model.json", "r")
+loaded_model_json = json_file.read()
+json_file.close()
+loaded_regressor_model = model_from_json(loaded_model_json)
+# load weights into new model
+loaded_regressor_model.load_weights("model/model.h5")
+
+# Making the predictions and visualising the results
 
 # Getting the real stock price of 2017
 dataset_test = pd.read_csv('dataset/Google_Stock_Price_Test.csv')
@@ -85,7 +102,7 @@ for i in range(60, 80):
     X_test.append(inputs[i-60:i, 0])
 X_test = np.array(X_test)
 X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
-predicted_stock_price = regressor.predict(X_test)
+predicted_stock_price = loaded_regressor_model.predict(X_test)
 predicted_stock_price = sc.inverse_transform(predicted_stock_price)
 
 # Visualising the results
